@@ -16,3 +16,25 @@ So far not a lot of luck - the training completes, but predictions suck. Loss is
 
 Removing `gradient_accumulation_steps` seemed to have a really substantial impact. Loss is already ~1.5 at 3 epochs. 7 to go.
 
+No great success yet, but this was surprisingly easy to get started. If it ends up being ~3 days from "never installed tensorflow" to "fine-tuned wav2vec2 on birdcalls" I'll be impressed with the LambdaLabs/HuggingFace/transformers industrial complex.
+
+OK, 10 epochs worked! 41% accuracy, but spot checks were 100%
+
+Next steps: adapt this one into a binary classifier for just owls
+
+- get a lot of hoots
+- turn those hoots into an actual dataset
+
+OK, I think I accidentally trained the model to just say nothing was an owl. I think I need more owls in the dataset. 
+
+Adding more owls doesn't seem to have fixed it, which is interesting. How can the loss/learning rate be so low when clearly it cant be getting that much right from the test set (if it never gets the owls right)?
+
+
+random guess... maybe the trainer is somehow picking up from where it left off? the loss seems really low to start with (0.6949), so maybe I'm just trying to fine tune an already-busted model. I should delete the directory and see what happens
+    I restarted it with the cache dir deleted and the starting loss was 0.0058. what.
+
+
+Maybe I was screwing up my testing. This seems to indicate it does actually predict OK:
+trainer.predict(birdcalls['test'].shuffle(seed=42).select(range(20)))
+Probably the next step is figuring out why it's overfitting, which it almost certainly is. Some combination of need-more-owl-sounds and harvesting 5s clips that match the birdcall set (so the model can't just look for padding)
+Yeah, it does predict fine on the training data. I couldn't make it predict by just adding padding, which suggests I do straight up need more owl sounds to make it work.

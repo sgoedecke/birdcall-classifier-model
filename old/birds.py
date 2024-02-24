@@ -1,3 +1,5 @@
+# Fine-tuning wav2vec2 on the birdcall dataset to produce a birdcall classifier
+
 # pip install soundfile librosa evaluate transformers
 # pip install accelerate -U
 
@@ -94,7 +96,7 @@ trainer.train()
 # now let's test it
 
 dataset = load_dataset("sgoedecke/5s_birdcall_samples_16k", cache_dir="~/sean-birds-testing-usw3")
-dataset = dataset.cast_column("audio", Audio(sampling_rate=16000))['test'].select(range(100))
+dataset = dataset.cast_column("audio", Audio(sampling_rate=16000))['test'].select(range(1000))
 sampling_rate = dataset.features["audio"].sampling_rate
 encoded_dataset = dataset.map(preprocess_function, batched=True)
 def encode_labels(example):
@@ -111,7 +113,7 @@ print(results)
 
 # 3 epochs {'eval_loss': 2.7299187183380127, 'eval_accuracy': 0.22, 'eval_runtime': 4.189, 'eval_samples_per_second': 23.872, 'eval_steps_per_second': 0.955, 'epoch': 2.96}
 # turning off gradient accumulation seems to have made a big improvement - the loss is already down below this before epoch 1 is over
-
+# {'eval_loss': 2.4031777381896973, 'eval_accuracy': 0.41, 'eval_runtime': 4.1486, 'eval_samples_per_second': 24.105, 'eval_steps_per_second': 0.964, 'epoch': 10.0}
 
 # from transformers import pipeline
 # classifier = pipeline("audio-classification", model="sgoedecke/wav2vec2_birdcalls")
@@ -119,9 +121,17 @@ print(results)
 # def test_record(index):
 #     audio_record = encoded_dataset[index]
 #     print(classifier(audio_record['audio']))
-#     print(audio_record['label'])
+#     print(id2label[audio_record['label']])
 
 
 # test_record(1)
 
 # This works on the LambdaLabs metal
+
+# model.save_pretrained("wav2vec2_owl_classifier")
+# feature_extractor.save_pretrained("wav2vec2_owl_classifier")
+
+# repo = Repository("wav2vec2_owl_classifier", clone_from="sgoedecke/wav2vec2_owl_classifier")
+# repo.git_add()
+# repo.git_commit("Pushing model and feature extractor to hub")
+# repo.git_push()
