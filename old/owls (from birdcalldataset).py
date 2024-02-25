@@ -15,36 +15,52 @@ import huggingface_hub
 huggingface_hub.login()
 
 
-birdcalls_raw = load_dataset("sgoedecke/powerful_owl_5s_16k", cache_dir="~/sean-birds-testing-usw3")
-birdcalls = birdcalls_raw.cast_column("audio", Audio(sampling_rate=16_000))
+# birdcalls = load_dataset("sgoedecke/5s_birdcall_samples_16k", cache_dir="~/sean-birds-testing-usw3")
+
+birdcalls_raw = load_dataset("tglcourse/5s_birdcall_samples_top20", cache_dir="~/sean-birds-testing-usw3")
+
+def change_label_to_not_owl(example):
+    example['label'] = "not-owl"
+    return example
+
+# Apply the function to each example in the dataset
+birdcalls_raw['train'] = birdcalls_raw['train'].map(change_label_to_not_owl)
+birdcalls = birdcalls_raw["train"].train_test_split(test_size=0.5)
+birdcalls = birdcalls.cast_column("audio", Audio(sampling_rate=16_000))
+
+owls_raw = load_dataset("sgoedecke/powerful-owl-birdcalls", cache_dir="~/sean-birds-testing-usw3")
+owls_raw = owls_raw.cast_column("audio", Audio(sampling_rate=16_000))
+
+# just not enough data points, make it so the model can't learn nothing is an owl
+# going ham here so it's 50/50 - this will almost certainly overfit but at least it should do _something_
+owls_raw['train'] = concatenate_datasets([owls_raw['train'], owls_raw['train'], owls_raw['train'], owls_raw['train'], owls_raw['train'], owls_raw['train'], owls_raw['train'], owls_raw['train']])
+owls_raw['train'] = concatenate_datasets([owls_raw['train'], owls_raw['train'], owls_raw['train'], owls_raw['train']])
 
 
-birdcalls = birdcalls['train'].train_test_split(test_size=0.3)
+owls = owls_raw['train'].train_test_split(test_size=0.5)
 
-# # Generate a dict between encoded labels and their text names
-# unique_labels = set(birdcalls["train"]["label"])
-# encoder = LabelEncoder()
-# encoder.fit(list(unique_labels))  # Fit once using all unique labels
+birdcalls['train'] = concatenate_datasets([birdcalls['train'], owls['train']])
+birdcalls['test'] = concatenate_datasets([birdcalls['test'], owls['test']])
 
-# # Transform the labels in both training and test datasets
-# encoded_train_labels = encoder.transform(birdcalls["train"]["label"])
-# encoded_test_labels = encoder.transform(birdcalls["test"]["label"])
+# Generate a dict between encoded labels and their text names
+unique_labels = set(birdcalls["train"]["label"])
+encoder = LabelEncoder()
+encoder.fit(list(unique_labels))  # Fit once using all unique labels
 
-# # Update the dataset with encoded labels
-# birdcalls["train"] = birdcalls["train"].add_column("encoded_labels", encoded_train_labels)
-# birdcalls["test"] = birdcalls["test"].add_column("encoded_labels", encoded_test_labels)
+# Transform the labels in both training and test datasets
+encoded_train_labels = encoder.transform(birdcalls["train"]["label"])
+encoded_test_labels = encoder.transform(birdcalls["test"]["label"])
+
+# Update the dataset with encoded labels
+birdcalls["train"] = birdcalls["train"].add_column("encoded_labels", encoded_train_labels)
+birdcalls["test"] = birdcalls["test"].add_column("encoded_labels", encoded_test_labels)
 
 # Generate label2id and id2label mappings
-# label2id = {label: i for i, label in enumerate(encoder.classes_)}
-# id2label = {i: label for i, label in enumerate(encoder.classes_)}
+label2id = {label: i for i, label in enumerate(encoder.classes_)}
+id2label = {i: label for i, label in enumerate(encoder.classes_)}
 
-label2id= {"owl": 0, "not_owl": 1 }
-id2label={0: "owl", 1: "not_owl" }
-
-# 0 is owl, 1 is not-owl
-
-# birdcalls['train'] = birdcalls['train'].remove_columns(['label']).rename_column("encoded_labels", "label")
-# birdcalls['test'] = birdcalls['test'].remove_columns(['label']).rename_column("encoded_labels", "label")
+birdcalls['train'] = birdcalls['train'].remove_columns(['label']).rename_column("encoded_labels", "label")
+birdcalls['test'] = birdcalls['test'].remove_columns(['label']).rename_column("encoded_labels", "label")
 
 # set(birdcalls['train']['label'])
 
@@ -103,14 +119,14 @@ model = AutoModelForAudioClassification.from_pretrained(
 )
 
 training_args = TrainingArguments(
-    output_dir="wav2vec2_owl_classifier_v3",
+    output_dir="wav2vec2_owl_classifier_v2",
     evaluation_strategy="epoch",
     save_strategy="epoch",
     learning_rate=3e-5,
     per_device_train_batch_size=32,
     # gradient_accumulation_steps=4,
     per_device_eval_batch_size=32,
-    num_train_epochs=10,
+    num_train_epochs=1,
     warmup_ratio=0.1,
     logging_steps=10,
     load_best_model_at_end=True,
@@ -132,8 +148,6 @@ trainer.train()
 
 # ---
 # now let's test it
-
-# birdcalls_raw = load_dataset("sgoedecke/powerful_owl_5s_16k", cache_dir="~/sean-birds-testing-usw3")
 dataset = load_dataset("sgoedecke/powerful-owl-birdcalls", cache_dir="~/sean-birds-testing-usw3")
 # dataset = load_dataset("sgoedecke/5s_birdcall_samples_16k", cache_dir="~/sean-birds-testing-usw3")
 dataset = dataset.cast_column("audio", Audio(sampling_rate=16000))['train'].select(range(20))

@@ -38,3 +38,16 @@ Maybe I was screwing up my testing. This seems to indicate it does actually pred
 trainer.predict(birdcalls['test'].shuffle(seed=42).select(range(20)))
 Probably the next step is figuring out why it's overfitting, which it almost certainly is. Some combination of need-more-owl-sounds and harvesting 5s clips that match the birdcall set (so the model can't just look for padding)
 Yeah, it does predict fine on the training data. I couldn't make it predict by just adding padding, which suggests I do straight up need more owl sounds to make it work.
+
+
+To try:
+- just segment powerful-owl recordings into 5-second chunks naively
+- instead of other birdcalls, train against background nature sounds as well (but there's still a size issue)
+- try to crack the "you don't have a lot of owl data" issue (training on asymmetrical datasets) instead of working around it
+
+OK, I've pulled a ton of data from inat and other sources. 1809 samples, from which I hope to filter at least 800 powerful owl calls. Filtering with python hasn't been successful. I'm going to chunk them into 5 second segments, then listen to them all and manually move them into `/hoots` if they contain owl calls, and then I'll upload the dataset as powerful-owl-5s or something. I should move the other sounds into `/not-hoots`. (I ended up making a script to autoplay and wait for input here)
+
+
+Wow, that took a long time, even with my helper script! Like three full hours of classifying. Lessons: put a beep between sounds, if possible make it so that when you classify as owl it skips forward immediately, re-runnability is essential, replay-sound is essential.
+
+Some long-range thoughts as the model trains: I should probably figure out how to bias against false positives here - if an owl calls once, it'll call a few times, so as long as my hit rate is 80%+ and I never false-pos I should be OK.
