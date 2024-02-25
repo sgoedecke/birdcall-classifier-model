@@ -18,6 +18,8 @@ https://huggingface.co/sgoedecke/wav2vec2_owl_classifier_v3
 
 - ??
 - Throw a big file up, segment it into five second segments, drop segments with no noise, run the rest against the classifier, I guess
+- I could even use the HF inference API here (spaces/inf endpoints if I want to get it right)
 
-scp -i ~/.ssh/id_rsa ./owl-calls-yt.wav ubuntu@209.20.158.204:~/.
-Then run `deployment.py`
+yep, see hf-api.py
+
+holy shit, it actually works

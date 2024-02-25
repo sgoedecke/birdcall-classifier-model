@@ -51,3 +51,8 @@ OK, I've pulled a ton of data from inat and other sources. 1809 samples, from wh
 Wow, that took a long time, even with my helper script! Like three full hours of classifying. Lessons: put a beep between sounds, if possible make it so that when you classify as owl it skips forward immediately, re-runnability is essential, replay-sound is essential.
 
 Some long-range thoughts as the model trains: I should probably figure out how to bias against false positives here - if an owl calls once, it'll call a few times, so as long as my hit rate is 80%+ and I never false-pos I should be OK.
+  i.e. I want high precision and I'm willing to trade low recall to do it. I should consider training with the F0.5 score as my key metric instead of the F1 score
+
+Seems to work on the training data, at least! Tested this one out on the HF inference API as the model trained (it's at like epoch 6.5, down to .16 loss)
+
+I'll train a fbeta model at the same time and then shut down my LambdaLabs node and do my testing on the HF inference API.

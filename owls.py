@@ -82,15 +82,20 @@ birdcalls = birdcalls.map(preprocess_function, remove_columns="audio", batched=T
 #     predictions = np.argmax(eval_pred.predictions, axis=1)
 #     return accuracy.compute(predictions=predictions, references=eval_pred.label_ids)
 
+def fbeta_score(precision, recall, beta=0.5):
+    return (1 + beta**2) * ((precision * recall) / ((beta**2 * precision) + recall))
+
 def compute_metrics(eval_pred):
     predictions = np.argmax(eval_pred.predictions, axis=-1)
     labels = eval_pred.label_ids
     # Calculate precision, recall, and F1 score
     precision, recall, f1, _ = precision_recall_fscore_support(labels, predictions, average='binary')
+    fbeta = fbeta_score(precision, recall, beta=0.5)
     metrics = {
         'precision': precision,
         'recall': recall,
         'f1': f1,
+        'fbeta': fbeta
     }
     return metrics
 
@@ -103,7 +108,7 @@ model = AutoModelForAudioClassification.from_pretrained(
 )
 
 training_args = TrainingArguments(
-    output_dir="wav2vec2_owl_classifier_v3",
+    output_dir="wav2vec2_owl_classifier_v3_fbeta",
     evaluation_strategy="epoch",
     save_strategy="epoch",
     learning_rate=3e-5,
@@ -114,7 +119,7 @@ training_args = TrainingArguments(
     warmup_ratio=0.1,
     logging_steps=10,
     load_best_model_at_end=True,
-    metric_for_best_model="f1",
+    metric_for_best_model="fbeta",
     push_to_hub=True,
     resume_from_checkpoint=False,
 )
