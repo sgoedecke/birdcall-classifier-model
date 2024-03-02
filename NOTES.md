@@ -56,3 +56,54 @@ Some long-range thoughts as the model trains: I should probably figure out how t
 Seems to work on the training data, at least! Tested this one out on the HF inference API as the model trained (it's at like epoch 6.5, down to .16 loss)
 
 I'll train a fbeta model at the same time and then shut down my LambdaLabs node and do my testing on the HF inference API.
+
+Well, it works! But kinda slow on my DO droplet
+
+Batch
+15 sec for a 1mb file
+1 min for a 3mb file
+
+Stream is broken
+
+Piecwise
+1.1 min for a 3mb file (3m40s)
+On hugging face API, 43 sec after warmup
+
+I should get streaming working. But I should also try to speed this up. Could at minimum quantize. Could even maybe run it with llama.cpp
+
+parallelize the HF calls for sure
+
+Struggling to quantize - and also I feel like this 300MB w2v2 model was already quantized, so maybe unnecessary
+
+Student model? Seems pretty fiddly: https://medium.com/georgian-impact-blog/compressing-wav2vec-2-0-f41166e82dc2
+
+Probably worth trying harder to distribute inference across CPU cores
+
+I wonder if I can just straight up try larger chunks into the model, even though it was trained on smaller ones.
+https://huggingface.co/blog/asr-chunking
+`output = pipe("very_long_file.mp3", chunk_length_s=10, stride_length_s=(4, 2))`
+
+yeah, larger chunks work fine. They seem to predict acceptably as well, which is an interesting bonus
+
+Batching across cores doesn't do anything, the pipeline class already does spreads work across available CPUs. That's why it's so hard to bring the time down below 18-20 seconds for a 2 min file - I'm fighting an already-optimized thing. 
+
+https://arxiv.org/pdf/2202.05993.pdf suggests that when you're running wav2vec2 on cheap GPUs for transcription, if you can transcribe as fast as audio comes in you're doing very well. Classifying should be much faster, but if it's in the same ballpark maybe 10s/min isn't so bad.
+
+Even aggressive pruning of wav2vec2 only gives you like a 30% improvement https://www.researchgate.net/profile/Oswaldo-Ludwig/publication/374109762_Presentation_compressed_W2Vpdf/data/650db154c05e6d1b1c2745eb/Presentation-compressed-W2V.pdf?origin=publication_list 
+
+I could try a performance-optimized smaller version of wav2vec, that claims to be almost 2x faster: https://huggingface.co/docs/transformers/model_doc/sew-d 
+
+https://huggingface.co/docs/transformers/model_doc/audio-spectrogram-transformer - this is fascinating, and basically does what I suggested doing in my notes (using a visual model on spectrograms)
+
+
+Trying a tiny sew-d model - the loss seems pretty static at 0.1/2. If that represents a 3-6x improvement from random guessing, maybe that's still worthwhile? Oh actually, screw loss - the f1 score is great. I think maybe we're good? 
+The final model is 1/4 the size lol.
+
+Wow, batched inference - which did not buy anything in wav2vec2 gives another 2x speedup on the sew-d model. Maybe we were bottlenecking on memory.
+
+OK, today I'm going to try and (a) run some AO recordings through the website (https://data.acousticobservatory.org/projects/1/regions/26/audio_recordings/download) and (b) write up instructions to inference large files on server, which will probably mean a new repo 
+
+on the website, 156MB FLAC: the upload OOMd, I think. That's kind of weird. 
+Actually, increasing the timeout seems to have fixed it??? Maybe I was misreading dmesg.
+
+OK, so the server now works on a 2H FLAC (processing time 7 min ish?). That's exciting. I want to see how fast it can rip through on a H100. CPU bound, even with 20 cores it doesn't make a difference. But putting it on the GPUs gives 3 OOMs speedup. (even the wav2vec2 model gets the same, though that's 3x slower than the SEW-D model)
