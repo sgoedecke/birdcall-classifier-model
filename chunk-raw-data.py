@@ -8,7 +8,7 @@ os.makedirs(output_dir, exist_ok=True)
 # Define the segment length in milliseconds
 segment_length = 5000  # 5 seconds
 
-ddir = './data/youtube/'
+ddir = './data/'
 # Iterate over all WAV files in the current directory
 for wav_file in os.listdir(ddir):
     if wav_file.endswith(".wav"):
