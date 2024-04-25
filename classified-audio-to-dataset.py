@@ -36,9 +36,9 @@ folders_labels = [
 
 import huggingface_hub
 huggingface_hub.login()
-dataset.push_to_hub('powerful_owl_5s_16k')
 
 audio_paths, labels, filenames = create_dataset_from_folders(folders_labels)
 dataset = prepare_dataset(audio_paths, labels, filenames)
+dataset.push_to_hub('powerful_owl_5s_16k_v3')
 
 print(dataset)

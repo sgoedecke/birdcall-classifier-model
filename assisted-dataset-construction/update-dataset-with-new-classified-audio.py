@@ -39,7 +39,7 @@ folders_labels = [
 ]
 
 # Load the existing dataset from the Hugging Face Hub
-dataset_name = 'sgoedecke/powerful_owl_5s_16k'
+dataset_name = 'sgoedecke/powerful_owl_5s_16k_v2'
 new_dataset_name = 'sgoedecke/powerful_owl_5s_16k_v2'
 
 existing_dataset = load_dataset(dataset_name, split='train')

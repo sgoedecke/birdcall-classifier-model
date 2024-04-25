@@ -11,11 +11,11 @@ import numpy as np
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import precision_recall_fscore_support, roc_auc_score
 
-# import huggingface_hub
-# huggingface_hub.login()
+import huggingface_hub
+huggingface_hub.login()
 
 
-birdcalls_raw = load_dataset("sgoedecke/powerful_owl_5s_16k", cache_dir="~/sean-birds-testing-usw3")
+birdcalls_raw = load_dataset("sgoedecke/powerful_owl_5s_16k_v3", cache_dir="~/sean-birds-testing-usw3")
 birdcalls = birdcalls_raw.cast_column("audio", Audio(sampling_rate=16_000))
 
 
@@ -86,7 +86,7 @@ training_args = TrainingArguments(
     per_device_train_batch_size=32,
     # gradient_accumulation_steps=4,
     per_device_eval_batch_size=32,
-    num_train_epochs=10,
+    num_train_epochs=15,
     warmup_ratio=0.1,
     logging_steps=10,
     load_best_model_at_end=True,

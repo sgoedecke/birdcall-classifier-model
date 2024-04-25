@@ -107,3 +107,25 @@ on the website, 156MB FLAC: the upload OOMd, I think. That's kind of weird.
 Actually, increasing the timeout seems to have fixed it??? Maybe I was misreading dmesg.
 
 OK, so the server now works on a 2H FLAC (processing time 7 min ish?). That's exciting. I want to see how fast it can rip through on a H100. CPU bound, even with 20 cores it doesn't make a difference. But putting it on the GPUs gives 3 OOMs speedup. (even the wav2vec2 model gets the same, though that's 3x slower than the SEW-D model)
+
+---
+
+TODO: improve dataset with new data, crack down on false positives. First step: AI-assisted chunking. Trust negatives, double-check positives.
+
+1. Create a new working folder and go into it
+2. Copy your wavs into a `./data/` folder
+3. `python3 /Users/sgoedecke/Code/birds/server/manual/infer.py ./data/*.wav` to generate a report identifying the owl sounds from the wavs (will contain false positives, likely). This will generate the report in `owl_detection_report.txt`
+4. `python3 /Users/sgoedecke/Code/birds/assisted-dataset-construction/chunk-raw-data.py` to fill a `/segments` folder with those 5 second chunks
+5. `python3 /Users/sgoedecke/Code/birds/manual-audio-classifier.py` to go listen to those segments and stick them in owls/not-owls folders
+6. `python3 /Users/sgoedecke/Code/birds/assisted-dataset-construction/update-dataset-with-new-classified-audio.py` to take those owls/not-owls snippets and supplement the existing powerful owl dataset (labelled `sgoedecke/powerful_owl_5s_16k_v2`)
+
+
+20:43-51 I heard a hoot (1243s on)
+TODO: try generate report with the SEW-d and see if it's different - it is very minor.
+Note: sewd and the regular w2v2 model mostly overlap, but there are some small differences. Certainly w2v2 doesn't seem necessarily better.
+
+TODO: pull data from acoustic observatory to catch more false positives
+
+Note: when processing a bunch of what you expect are false positives, it's easier to just play them all in VLC than to use the script
+
+f1 isn't gonna drop below .94 in either model at ~2k samples in the dataset

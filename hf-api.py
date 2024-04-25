@@ -2,7 +2,7 @@ import json
 import requests
 from pydub import AudioSegment
 
-headers = {"Authorization": f"Bearer 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"}
+headers = {"Authorization": f"Bearer hf_key"}
 API_URL = "https://api-inference.huggingface.co/models/sgoedecke/wav2vec2_owl_classifier_v3"
 
 def query(audio_bytes):
