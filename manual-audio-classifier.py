@@ -2,6 +2,7 @@ import os
 import shutil
 import soundfile as sf
 import simpleaudio as sa
+import numpy as np
 
 # Directories
 source_dir = "./segments"
@@ -31,7 +32,9 @@ def copy_file(file_path, destination):
     print(f"File copied to {destination}")
 
 # Adjusted function to handle file playback and user commands
-def handle_file(wav_path, speed=5):
+def handle_file(wav_file, index, total):
+    print(f"Processing sample {index} out of {total}")
+    wav_path = os.path.join(source_dir, wav_file)
     data, original_samplerate = sf.read(wav_path)
     while True:
         play_audio(data, original_samplerate)  # Use original samplerate for playback
@@ -47,10 +50,12 @@ def handle_file(wav_path, speed=5):
             print("Invalid command. Skipping file.")
             break
 
+# Get list of files to process
+wav_files = [f for f in os.listdir(source_dir) if f.endswith(".wav")]
+total_files = len(wav_files)
+
 # Iterate over all WAV files in the source directory
-for wav_file in os.listdir(source_dir):
-    wav_path = os.path.join(source_dir, wav_file)    
-    # Check if file already exists in either target directory
+for index, wav_file in enumerate(wav_files, start=1):
     if os.path.exists(os.path.join(not_owls_dir, wav_file)) or os.path.exists(os.path.join(owls_dir, wav_file)):
-        continue  # Skip this file    
-    handle_file(wav_path)
+        continue  # Skip this file if already processed
+    handle_file(wav_file, index, total_files)
